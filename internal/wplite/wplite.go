@@ -111,8 +111,8 @@ func (w *WPLite) EnsureEnvFile() error {
 		"WP_USER",
 		"WP_PASS",
 		"WP_EMAIL",
-		"WP_THEME",
-		"WP_PORT",
+		//"WP_THEME",
+		//"WP_PORT",
 	}
 	if _, err := os.Stat(envFile); !os.IsNotExist(err) {
 		// set env vars from file
