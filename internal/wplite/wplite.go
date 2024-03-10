@@ -125,9 +125,11 @@ func (w *WPLite) EnsureEnvFile() error {
 		w.Env.Pass = os.Getenv("WP_PASS")
 		w.Env.Email = os.Getenv("WP_EMAIL")
 		w.Env.Theme = os.Getenv("WP_THEME")
-		w.Env.Port, err = strconv.Atoi(os.Getenv("WP_PORT"))
-		if err != nil {
-			return err
+		if os.Getenv("WP_PORT") != "" {
+			w.Env.Port, err = strconv.Atoi(os.Getenv("WP_PORT"))
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	}
@@ -184,19 +186,25 @@ func (w *WPLite) openOnReady(stdout io.Reader) {
 }
 
 func (w *WPLite) DockerRun() error {
+	l := log.WithFields(log.Fields{
+		"fn": "DockerRun",
+	})
+	l.Debug("running wplite docker container...")
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-
 	portMapping := strconv.Itoa(w.Env.Port) + ":80"
-
-	cmd := exec.Command("docker", "run", "-d", "-p", portMapping,
+	cmds := []string{
+		"docker", "run", "-d", "-p", portMapping,
 		"--name", w.ContainerName,
-		"-v", cwd+"/wp-content:/var/www/html/wp-content",
-		"-v", cwd+"/.htaccess:/var/www/html/.htaccess",
+		"-v", cwd + "/wp-content:/var/www/html/wp-content",
+		"-v", cwd + "/.htaccess:/var/www/html/.htaccess",
 		"--env-file", path.Join(cwd, w.Env.File),
-		w.ImageUrl)
+		w.ImageUrl,
+	}
+	l.Debugf("running command: %s", strings.Join(cmds, " "))
+	cmd := exec.Command(cmds[0], cmds[1:]...)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -285,7 +293,14 @@ func (w *WPLite) DockerRunning() bool {
 	return true
 }
 
-func (w *WPLite) Build(noStop bool) error {
+func (w *WPLite) streamLogsStdout() {
+	cmd := exec.Command("docker", "logs", "-f", w.ContainerName)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+}
+
+func (w *WPLite) Build(noStop, quiet bool) error {
 	l := log.WithFields(log.Fields{
 		"fn": "Build",
 	})
@@ -304,30 +319,46 @@ func (w *WPLite) Build(noStop bool) error {
 		exitArg = "--exit=true"
 	}
 	cmd := exec.Command("docker", "exec", w.ContainerName, "wp", "--allow-root", "wplite", "build", exitArg)
-	// cmd.Stdout = os.Stdout
-	// cmd.Stderr = os.Stderr
+	if !quiet {
+		go w.streamLogsStdout()
+	}
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 	w.StopDev()
 	l.Info("build complete. static assets written to wp-content/static")
-	warnIfStaticNotGitIgnored()
+	gitIgnoreStatic()
 	return nil
 }
 
-func logIgnore() {
-	log.Warn("wp-content/static is not gitignored. run `echo wp-content/static >> .gitignore` to ignore it")
+func ignoreStatic() error {
+	// add wp-content/static to .gitignore
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	gitIgnoreFile := path.Join(wd, ".gitignore")
+	gitIgnore, err := os.OpenFile(gitIgnoreFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer gitIgnore.Close()
+	newLine := "\nwp-content/static\n"
+	// add the line to the file
+	if _, err := gitIgnore.WriteString(newLine); err != nil {
+		return err
+	}
+	return nil
 }
 
-func warnIfStaticNotGitIgnored() {
+func gitIgnoreStatic() {
 	// if this is a git repo
 	// and the wp-content/static directory is not gitignored
-	// warn the user
+	// add it to the .gitignore file
 	wd, err := os.Getwd()
 	if err != nil {
 		return
 	}
-
 	gitDir := path.Join(wd, ".git")
 	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
 		return
@@ -336,7 +367,9 @@ func warnIfStaticNotGitIgnored() {
 	gitIgnoreFile := path.Join(wd, ".gitignore")
 	gitIgnore, err := os.Open(gitIgnoreFile)
 	if err != nil {
-		logIgnore()
+		if err := ignoreStatic(); err != nil {
+			return
+		}
 		return
 	}
 	defer gitIgnore.Close()
@@ -346,5 +379,7 @@ func warnIfStaticNotGitIgnored() {
 			return
 		}
 	}
-	logIgnore()
+	if err := ignoreStatic(); err != nil {
+		return
+	}
 }

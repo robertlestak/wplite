@@ -37,6 +37,7 @@ func cmdDockerRun(action string) {
 	envFile := startFlagset.String("env-file", ".wplite-env", "env file")
 	wpliteImage := startFlagset.String("image", "robertlestak/wplite:latest", "wplite image")
 	noStop := startFlagset.Bool("no-stop", false, "do not stop container after running")
+	quietBuild := startFlagset.Bool("quiet", false, "do not output build logs")
 	if err := startFlagset.Parse(os.Args[2:]); err != nil {
 		l.WithError(err).Error("error parsing start flagset")
 	}
@@ -56,7 +57,7 @@ func cmdDockerRun(action string) {
 	wpl.ContainerName = wpl.WorkspaceContainerName()
 	switch action {
 	case "build":
-		if err := wpl.Build(*noStop); err != nil {
+		if err := wpl.Build(*noStop, *quietBuild); err != nil {
 			l.WithError(err).Error("error building wplite")
 		}
 	case "start":
