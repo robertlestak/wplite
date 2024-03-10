@@ -53,6 +53,8 @@ COPY --from=builder /wplite/scripts/wp-patch/wp-config.php /var/www/html/wp-conf
 
 COPY --from=builder /wplite /wplite
 
+RUN mkdir -p /wplite/sigs
+RUN chown -R www-data:www-data /wplite
 RUN bash /wplite/scripts/install-wp-cli.sh
 
 ENTRYPOINT [ "bash", "/wplite/scripts/entrypoint.sh" ]
