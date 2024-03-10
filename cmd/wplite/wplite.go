@@ -35,7 +35,7 @@ func cmdDockerRun(action string) {
 	theme := startFlagset.String("theme", "twentytwentyfour", "theme")
 	port := startFlagset.Int("port", 80, "port")
 	envFile := startFlagset.String("env-file", ".wplite-env", "env file")
-	wpliteImage := startFlagset.String("image", "test", "wplite image")
+	wpliteImage := startFlagset.String("image", "robertlestak/wplite:latest", "wplite image")
 	noStop := startFlagset.Bool("no-stop", false, "do not stop container after running")
 	if err := startFlagset.Parse(os.Args[2:]); err != nil {
 		l.WithError(err).Error("error parsing start flagset")
