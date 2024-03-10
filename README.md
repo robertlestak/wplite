@@ -20,6 +20,15 @@ Before you can use `wplite`, you must have the following dependencies installed:
 
 From there, `wplite` simply relies on `git` and `git-lfs` to store the entire state of the site in whichever `git`-compatible VCS and workflow you prefer.
 
+## Installation
+
+Before you can use `wplite`, you'll need to download the latest binary from the [releases page](https://github.com/robertlestak/wplite/releases). You can also use [install-release](https://github.com/Rishang/install-release) to install the latest release:
+
+```sh
+pip install -U install-release
+install-release get https://github.com/robertlestak/wplite
+```
+
 ## Usage
 
 ### Creating a Site
