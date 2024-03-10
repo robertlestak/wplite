@@ -38,6 +38,8 @@ func cmdDockerRun(action string) {
 	wpliteImage := startFlagset.String("image", "robertlestak/wplite:latest", "wplite image")
 	noStop := startFlagset.Bool("no-stop", false, "do not stop container after running")
 	quietBuild := startFlagset.Bool("quiet", false, "do not output build logs")
+	branch := startFlagset.String("git-branch", "main", "git branch")
+	gitUrl := startFlagset.String("git-url", "", "git url")
 	if err := startFlagset.Parse(os.Args[2:]); err != nil {
 		l.WithError(err).Error("error parsing start flagset")
 	}
@@ -53,12 +55,24 @@ func cmdDockerRun(action string) {
 			Email: *email,
 			Port:  *port,
 		},
+		VCS: wplite.VCS{
+			Branch: *branch,
+			GitUrl: *gitUrl,
+		},
 	}
 	wpl.ContainerName = wpl.WorkspaceContainerName()
 	switch action {
 	case "build":
 		if err := wpl.Build(*noStop, *quietBuild); err != nil {
 			l.WithError(err).Error("error building wplite")
+		}
+	case "pull":
+		if err := wpl.Pull(); err != nil {
+			l.WithError(err).Error("error pulling wplite")
+		}
+	case "push":
+		if err := wpl.Push(); err != nil {
+			l.WithError(err).Error("error pushing wplite")
 		}
 	case "start":
 		if err := wpl.Start(); err != nil {
@@ -90,6 +104,8 @@ func main() {
 	switch wpliteFlagset.Args()[0] {
 	case "build":
 		cmdDockerRun("build")
+	case "push":
+		cmdDockerRun("push")
 	case "start":
 		cmdDockerRun("start")
 	case "stop":

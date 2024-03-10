@@ -32,6 +32,7 @@ type WPLiteEnv struct {
 
 type VCS struct {
 	GitUrl string
+	Branch string
 }
 
 type WPLite struct {
@@ -382,4 +383,110 @@ func gitIgnoreStatic() {
 	if err := ignoreStatic(); err != nil {
 		return
 	}
+}
+
+func (w *WPLite) Pull() error {
+	l := log.WithFields(log.Fields{
+		"fn": "Pull",
+	})
+	l.Info("pulling wplite from remote git repository...")
+	// if the .git directory does not exist, throw an error
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	gitDir := path.Join(wd, ".git")
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) && w.VCS.GitUrl == "" {
+		return fmt.Errorf("not a git repository")
+	} else if os.IsNotExist(err) && w.VCS.GitUrl != "" {
+		// if the .git directory does not exist, initialize a new git repository
+		cmd := exec.Command("git", "init")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+		// then, add the remote origin
+		cmd = exec.Command("git", "remote", "add", "origin", w.VCS.GitUrl)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+	// if the wp-content/static directory is not gitignored, add it to the .gitignore file
+	gitIgnoreStatic()
+	// then, pull the latest changes
+	cmd := exec.Command("git", "pull", "origin", w.VCS.Branch)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	l.Info("pull complete")
+	return nil
+}
+
+func (w *WPLite) Push() error {
+	l := log.WithFields(log.Fields{
+		"fn": "Push",
+	})
+	l.Info("pushing wplite to remote git repository...")
+	// if the docker container is running, stop it
+	if w.DockerRunning() {
+		if err := w.Stop(); err != nil {
+			return err
+		}
+	}
+	// if the .git directory does not exist, throw an error
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	gitDir := path.Join(wd, ".git")
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) && w.VCS.GitUrl == "" {
+		return fmt.Errorf("not a git repository")
+	} else if os.IsNotExist(err) && w.VCS.GitUrl != "" {
+		// if the .git directory does not exist, initialize a new git repository
+		cmd := exec.Command("git", "init")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+		// then, add the remote origin
+		cmd = exec.Command("git", "remote", "add", "origin", w.VCS.GitUrl)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+	// if the wp-content/static directory is not gitignored, add it to the .gitignore file
+	gitIgnoreStatic()
+	// then, add, commit, and push the changes
+	cmd := exec.Command("git", "add", ".")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "commit", "-m", "wplite update")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	cmd = exec.Command("git", "push", "--set-upstream", "origin", w.VCS.Branch)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	l.Info("push complete")
+	return nil
 }
