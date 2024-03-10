@@ -61,11 +61,11 @@ func cmdDockerRun(action string) {
 			l.WithError(err).Error("error building wplite")
 		}
 	case "start":
-		if err := wpl.StartDev(); err != nil {
+		if err := wpl.Start(); err != nil {
 			l.WithError(err).Error("error starting wplite")
 		}
 	case "stop":
-		if err := wpl.StopDev(); err != nil {
+		if err := wpl.Stop(); err != nil {
 			l.WithError(err).Error("error stopping wplite")
 		}
 	}

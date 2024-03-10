@@ -227,11 +227,11 @@ func (w *WPLite) DockerRemove() error {
 	return nil
 }
 
-func (w *WPLite) StopDev() error {
+func (w *WPLite) Stop() error {
 	l := log.WithFields(log.Fields{
-		"fn": "StopDev",
+		"fn": "Stop",
 	})
-	l.Info("stopping wplite dev environment...")
+	l.Info("stopping wplite...")
 	if !w.DockerRunning() {
 		return nil
 	}
@@ -257,14 +257,14 @@ func (w *WPLite) WatchDockerLogs() error {
 	return nil
 }
 
-func (w *WPLite) StartDev() error {
+func (w *WPLite) Start() error {
 	l := log.WithFields(log.Fields{
-		"fn": "StartDev",
+		"fn": "Start",
 	})
-	l.Info("starting wplite dev environment...")
+	l.Info("starting wplite...")
 	// if the docker container is already running, stop it first
 	if w.DockerRunning() {
-		if err := w.StopDev(); err != nil {
+		if err := w.Stop(); err != nil {
 			return err
 		}
 	}
@@ -309,7 +309,7 @@ func (w *WPLite) Build(noStop, quiet bool) error {
 	// if not, throw an error
 	if !w.DockerRunning() {
 		w.OpenOnReady = false
-		if err := w.StartDev(); err != nil {
+		if err := w.Start(); err != nil {
 			return err
 		}
 	}
@@ -325,7 +325,7 @@ func (w *WPLite) Build(noStop, quiet bool) error {
 	if err := cmd.Run(); err != nil {
 		return err
 	}
-	w.StopDev()
+	w.Stop()
 	l.Info("build complete. static assets written to wp-content/static")
 	gitIgnoreStatic()
 	return nil
