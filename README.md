@@ -55,6 +55,23 @@ You can create this file manually, or let `wplite` prompt you for the values whe
 
 On first start, `wplite` will create a `wp-content` directory and a `.htaccess` file in the current directory. The first start of a site can take 1-2 minutes to get everything set up. Once the site is initialized, your browser will open to the CMS. You can then log in with the username and password you specified in `.wplite-env`.
 
+#### git init
+
+Once the site is initialized, you can run `git init` to initialize a new git repository in the site directory.
+
+```bash
+git init
+git remote add origin https://...
+```
+
+Then, add and commit your changes:
+
+```bash
+git add .
+git commit -m "wplite init"
+git push -u origin master
+```
+
 ### Starting an Existing Site
 
 If you have an existing site directory, you can simply run `wplite start` in that directory to start the CMS. Once the site is initialized (usually takes about 30-45 seconds), your browser will open to the CMS. You can then log in with the username and password you specified in `.wplite-env`.
