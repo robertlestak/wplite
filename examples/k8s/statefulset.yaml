@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wplite
+  namespace: default
+  labels:
+    app: wplite
+spec:
+  serviceName: wplite
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wplite
+  template:
+    metadata:
+      labels:
+        app: wplite
+    spec:
+      containers:
+      - name: wplite
+        image: robertlestak/wplite:latest
+        ports:
+          - containerPort: 80
+            name: http
+        envFrom:
+        - secretRef:
+            name: wplite
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 1000m
+            memory: 1000Mi
+        volumeMounts:
+          - name: wplite
+            mountPath: /var/www/html/wp-content
+          - name: wplite-htaccess
+            mountPath: /var/www/html/.htaccess
+            subPath: .htaccess
+      volumes:
+        - name: wplite
+          persistentVolumeClaim:
+            claimName: wplite
+        - name: wplite-htaccess
+          configMap:
+            name: wplite-htaccess
