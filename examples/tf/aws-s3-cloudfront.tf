@@ -92,3 +92,7 @@ resource "aws_cloudfront_distribution" "my_distribution" {
     acm_certificate_arn = var.acm_certificate_arn
   }
 }
+
+output "cloudfront_domain_name" {
+  value = aws_cloudfront_distribution.my_distribution.domain_name
+}
